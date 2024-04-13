@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heartbeat Simulator</title>
+<style>
+#simulationLog {
+    height: 200px;		/* Adjust height as needed */
+    overflow-y: scroll;	/* Enable vertical scroll */
+}
+</style>
+</head>
+<body>
+
+<input	type	="text"	id="userInput" placeholder="Enter a Number">
+<button	onclick	="toggleSim()"	>Toggle Simulation</button>
+<button	onclick	="setBPM()"		>Set BPM</button>
+<button	onclick	="setTarget()"	>Set Target BPM</button>
+<button	onclick	="setRecovery()">Set Recovery Rate</button>
+<button	onclick	="setSkip()"	>Set Skip Threshold</button>
+<button	onclick	="setSkipChance()">Set Skip Chance</button>
+<p		id		="result" readonly></p>
+<textarea id=	"simulationLog" rows="10" cols="100" readonly></textarea>
+
+<script>
+var enableSim = false;
+var HR = 120;   			// Normal resting heart rate in BPM
+var enterBPM = 120;			// for setBPM()
+var currentBPM = 120;   	// Initial heart rate in BPM
+var k = 0.004;  			// Constant for heart rate decay
+var t = 0;      			// Time per Beat
+var totalTime = 0;			// total time
+var skipLevel = 0;			// added to after every beat
+var skipThreshold = 1.0;	// makes a different sound when chance is more than threshold
+var skipChance = 0.1;		// default 10% to skip when above skipThreshold
+var breath = 0.0;			// breath level from 0.0 to 1.0
+var delayMilliseconds = 1000; // used for pausing threads
+var simulationLog = document.getElementById("simulationLog");
+
+function setBPM() {
+	// Get the value from the text box
+	var input = parseInt(document.getElementById('userInput').value);
+  
+	// Check if the conversion was successful
+	if (!isNaN(input)) {
+		enterBPM = input;
+		currentBPM = enterBPM;
+		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+	} else {
+		document.getElementById('result').textContent = "Invalid Target!\n";
+	}
+}
+
+function setTarget() {
+	// Get the value from the text box
+	var input = parseInt(document.getElementById('userInput').value);
+  
+	// Check if the conversion was successful
+	if (!isNaN(input)) {
+		HR = input;
+		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+	} else {
+		document.getElementById('result').textContent = "Invalid Target!\n";
+	}
+}
+
+
+function setRecovery() {
+	// Get the value from the text box
+	var input = parseFloat(document.getElementById('userInput').value);
+  
+	// Check if the conversion was successful
+	if (!isNaN(input)) {
+		k = input;
+		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+	} else {
+		document.getElementById('result').textContent = "Invalid K!\n";
+	}
+}
+
+function setSkip() {
+	// Get the value from the text box
+	var input = parseFloat(document.getElementById('userInput').value);
+  
+	// Check if the conversion was successful
+	if (!isNaN(input)) {
+		skipThreshold = input;
+		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+	} else {
+		document.getElementById('result').textContent = "Invalid Target!\n";
+	}
+}
+
+function setSkipChance() {
+	// Get the value from the text box
+	var input = parseFloat(document.getElementById('userInput').value);
+  
+	// Check if the conversion was successful
+	if (!isNaN(input)) {
+		skipChance = input;
+		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+	} else {
+		document.getElementById('result').textContent = "Invalid Target!\n";
+	}
+}
+
+function toggleSim() {
+    enableSim = !enableSim;
+    if (enableSim) {
+		totalTime = 0;
+        startSimulation();
+    } else {
+	    if (ambientAudio) {
+			ambientAudio.pause();			// Pause the audio
+			ambientAudio.currentTime = 0;	// Reset the playback position to the beginning
+		}
+	}
+}
+
+function startSimulation() {
+	// ambient low pitch noise
+	ambientAudio = new Audio('audio/rain.mp3');
+	ambientAudio.loop = true; // Loop the ambient audio
+	ambientAudio.play();
+
+    function playHeartbeatSound() {
+		var heartSounds;
+		if (currentBPM > 200) {
+			heartSounds = ['audio/200a.mp3', 'audio/200b.mp3', 'audio/200c.mp3', 'audio/200d.mp3', 'audio/200e.mp3'];
+		}
+		else if (currentBPM > 180) {
+			heartSounds = ['audio/180a.mp3', 'audio/180b.mp3', 'audio/180c.mp3', 'audio/180d.mp3', 'audio/180e.mp3'];
+		}
+		else if (currentBPM > 160) {
+			heartSounds = ['audio/160a.mp3', 'audio/160b.mp3', 'audio/160c.mp3', 'audio/160d.mp3', 'audio/160e.mp3'];
+		}
+		else {
+			heartSounds = ['audio/140a.mp3', 'audio/140b.mp3', 'audio/140c.mp3', 'audio/140d.mp3', 'audio/140e.mp3'];
+		}
+		var randomIndex = Math.floor(Math.random() * heartSounds.length)	// Random index within the range of the array
+		var heartAudio = new Audio(heartSounds[randomIndex]);				// new Audio object with randomly selected sound
+		heartAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random between 0.9 and 1.1
+		heartAudio.preservesPitch = false;
+		heartAudio.play(); 													// Play the selected sound
+	}
+	
+	function playSkipSound() {
+		var heartSounds = ['audio/skip1.mp3', 'audio/skip2.mp3'];
+		var randomIndex = Math.floor(Math.random() * heartSounds.length)	// Random index within the range of the array
+		var heartAudio = new Audio(heartSounds[randomIndex]);				// new Audio object with randomly selected sound
+		heartAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random pitch between 0.9 and 1.1
+		heartAudio.preservesPitch = false;
+		heartAudio.play();													// Play the selected sound
+	}
+	
+	function playBreathSound() {
+		var breathAudio;
+		if (currentBPM > 200) {
+			breathAudio = new Audio('audio/200breath.mp3');	
+		}
+		else if (currentBPM > 180) {
+			breathAudio = new Audio('audio/180breath.mp3');	
+		}
+		else if (currentBPM > 160) {
+			breathAudio = new Audio('audio/160breath.mp3');	
+		}
+		else {
+			breathAudio = new Audio('audio/140breath.mp3');	
+		}
+		breathAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random pitch between 0.9 and 1.1
+		breathAudio.preservesPitch = false;
+		breathAudio.play();													// Play the selected sound
+	}
+	
+	function simulateBreath() {		
+		breath += currentBPM/1000;
+		
+		if (breath > 1) {
+			playBreathSound();
+			breath -= 1;
+		}
+		
+		// run async from simulateHeartbeat so breathing feels a bit better
+        if (enableSim) {
+            setTimeout(simulateBreath, (delayMilliseconds + 10) );
+        }
+    }
+	
+    function simulateHeartbeat() {
+		if (currentBPM < HR) {
+			currentBPM = HR + (currentBPM - HR) * Math.exp(-k * t * 2);
+			currentBPM += Math.random() * 0.1;
+		} else {
+			currentBPM = HR + (currentBPM - HR) * Math.exp(-k * t);
+			currentBPM -= Math.random() * 0.05;
+		}
+        delayMilliseconds = 60000.0 / currentBPM;
+
+        var logMessage = skipLevel.toFixed(2) + " skip\t" + breath.toFixed(2) + " breath\t" + currentBPM.toFixed(2) + " BPM\n";
+        simulationLog.value += logMessage;
+		
+		skipLevel += 2/currentBPM;
+		if (skipLevel < skipThreshold) {
+			playHeartbeatSound();
+		} else if (Math.random() > skipChance) {
+			playHeartbeatSound();
+		} else {
+			skipLevel -= skipThreshold;
+			var logMessage = "Skip!\n"; simulationLog.value += logMessage;
+			currentBPM += Math.random() * 10 - 5;
+			
+			// increase delay from 1.5 to 2.5
+			delayMilliseconds *= (Math.random() + 1.5);
+			playSkipSound();
+		}
+		
+        t = delayMilliseconds / 1000.0; // Update time
+		totalTime += t;
+		
+        if (enableSim) {
+            simulationLog.scrollTop = simulationLog.scrollHeight; // Auto-scroll to bottom
+            setTimeout(simulateHeartbeat, delayMilliseconds);
+        }
+    }
+	
+    simulateHeartbeat();
+	simulateBreath();
+}
+
+</script>
+</body>
+</html>
