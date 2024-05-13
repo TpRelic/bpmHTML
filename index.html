@@ -11,32 +11,60 @@
 }
 </style>
 </head>
-<body>
+<body style="background-color:rgb(255, 255, 255);">
 
-<input	type	="text"	id="userInput" placeholder="Enter a Number">
-<button	onclick	="toggleSim()"	>Toggle Simulation</button>
-<button	onclick	="setBPM()"		>Set BPM</button>
-<button	onclick	="setTarget()"	>Set Target BPM</button>
-<button	onclick	="setRecovery()">Set Recovery Rate</button>
-<button	onclick	="setSkip()"	>Set Skip Threshold</button>
-<button	onclick	="setSkipChance()">Set Skip Chance</button>
+<style="background-color:rgba(25, 25, 25, 1);">
+
+<div class="container">
+	<input	type	="text"	id="userInput" placeholder="Enter a Number">
+	<button	onclick	="toggleSim()"	>Toggle Simulation</button>
+	<button	onclick	="setBPM()"		>Set BPM</button>
+</div>
+
+<div class="container2">
+	<button	onclick	="setTarget()"	>Set Target BPM</button>
+	<button	onclick	="setRecovery()">Set Recovery Rate</button>
+	<button	onclick	="setSkip()"	>Set Skip Threshold</button>
+	<button	onclick	="setSkipChance()">Set Skip Chance</button>
+</div>
+
+<div class="container3">
+	<input type="text" id="rootAudio" placeholder="Root Audio: [audio/ch/]">
+	<button onclick="getaudioPath()">Submit</button>
+</div>
+
 <p		id		="result" readonly></p>
-<textarea id=	"simulationLog" rows="10" cols="100" readonly></textarea>
+<textarea id=	"simulationLog" rows="10" cols="50" readonly></textarea>
+<img id="heartImg" src="imgs/heart1.png" alt="Original Image">
 
 <script>
 var enableSim = false;
 var HR = 120;   			// Normal resting heart rate in BPM
 var enterBPM = 120;			// for setBPM()
 var currentBPM = 120;   	// Initial heart rate in BPM
-var k = 0.004;  			// Constant for heart rate decay
+var k = 0.01;  				// Constant for heart rate decay
 var t = 0;      			// Time per Beat
 var totalTime = 0;			// total time
 var skipLevel = 0;			// added to after every beat
-var skipThreshold = 1.0;	// makes a different sound when chance is more than threshold
+var skipThreshold = 0.5;	// makes a different sound when chance is more than threshold
 var skipChance = 0.1;		// default 10% to skip when above skipThreshold
 var breath = 0.0;			// breath level from 0.0 to 1.0
+var audioPath = "audio/ch/";  // default audio location
 var delayMilliseconds = 1000; // used for pausing threads
 var simulationLog = document.getElementById("simulationLog");
+
+document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
+
+function getaudioPath() {
+	var tmpPath = document.getElementById("rootAudio").value;
+	if (!tmpPath) {
+		alert("Invalid Folder Location");
+	} else {
+		alert("Location entered: " + tmpPath);
+		audioPath = tmpPath;
+	}
+	// You can further process the audioPath variable as needed
+}
 
 function setBPM() {
 	// Get the value from the text box
@@ -53,10 +81,8 @@ function setBPM() {
 }
 
 function setTarget() {
-	// Get the value from the text box
+	// Same thing
 	var input = parseInt(document.getElementById('userInput').value);
-  
-	// Check if the conversion was successful
 	if (!isNaN(input)) {
 		HR = input;
 		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
@@ -67,10 +93,7 @@ function setTarget() {
 
 
 function setRecovery() {
-	// Get the value from the text box
 	var input = parseFloat(document.getElementById('userInput').value);
-  
-	// Check if the conversion was successful
 	if (!isNaN(input)) {
 		k = input;
 		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
@@ -80,10 +103,7 @@ function setRecovery() {
 }
 
 function setSkip() {
-	// Get the value from the text box
 	var input = parseFloat(document.getElementById('userInput').value);
-  
-	// Check if the conversion was successful
 	if (!isNaN(input)) {
 		skipThreshold = input;
 		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
@@ -93,10 +113,7 @@ function setSkip() {
 }
 
 function setSkipChance() {
-	// Get the value from the text box
 	var input = parseFloat(document.getElementById('userInput').value);
-  
-	// Check if the conversion was successful
 	if (!isNaN(input)) {
 		skipChance = input;
 		document.getElementById('result').textContent = "Set BPM: " + enterBPM + " Target: " + HR + " Recovery: " + k + " Skip: " + skipThreshold + " Chance: " + skipChance;
@@ -127,29 +144,29 @@ function startSimulation() {
     function playHeartbeatSound() {
 		var heartSounds;
 		if (currentBPM > 200) {
-			heartSounds = ['audio/200a.mp3', 'audio/200b.mp3', 'audio/200c.mp3', 'audio/200d.mp3', 'audio/200e.mp3'];
+			heartSounds = [audioPath + '200a.mp3', audioPath + '200b.mp3', audioPath + '200c.mp3', audioPath + '200d.mp3', audioPath + '200e.mp3'];
 		}
 		else if (currentBPM > 180) {
-			heartSounds = ['audio/180a.mp3', 'audio/180b.mp3', 'audio/180c.mp3', 'audio/180d.mp3', 'audio/180e.mp3'];
+			heartSounds = [audioPath + '180a.mp3', audioPath + '180b.mp3', audioPath + '180c.mp3', audioPath + '180d.mp3', audioPath + '180e.mp3'];
 		}
 		else if (currentBPM > 160) {
-			heartSounds = ['audio/160a.mp3', 'audio/160b.mp3', 'audio/160c.mp3', 'audio/160d.mp3', 'audio/160e.mp3'];
+			heartSounds = [audioPath + '160a.mp3', audioPath + '160b.mp3', audioPath + '160c.mp3', audioPath + '160d.mp3', audioPath + '160e.mp3'];
 		}
 		else {
-			heartSounds = ['audio/140a.mp3', 'audio/140b.mp3', 'audio/140c.mp3', 'audio/140d.mp3', 'audio/140e.mp3'];
+			heartSounds = [audioPath + '140a.mp3', audioPath + '140b.mp3', audioPath + '140c.mp3', audioPath + '140d.mp3', audioPath + '140e.mp3'];
 		}
 		var randomIndex = Math.floor(Math.random() * heartSounds.length)	// Random index within the range of the array
 		var heartAudio = new Audio(heartSounds[randomIndex]);				// new Audio object with randomly selected sound
-		heartAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random between 0.9 and 1.1
+		heartAudio.playbackRate = Math.random() * 0.4 + 0.8; 				// random between 0.9 and 1.1
 		heartAudio.preservesPitch = false;
 		heartAudio.play(); 													// Play the selected sound
 	}
 	
 	function playSkipSound() {
-		var heartSounds = ['audio/skip1.mp3', 'audio/skip2.mp3'];
+		var heartSounds = [audioPath + 'skip1.mp3', audioPath + 'skip2.mp3'];
 		var randomIndex = Math.floor(Math.random() * heartSounds.length)	// Random index within the range of the array
 		var heartAudio = new Audio(heartSounds[randomIndex]);				// new Audio object with randomly selected sound
-		heartAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random pitch between 0.9 and 1.1
+		heartAudio.playbackRate = Math.random() * 0.4 + 0.8; 				// random pitch between 0.9 and 1.1
 		heartAudio.preservesPitch = false;
 		heartAudio.play();													// Play the selected sound
 	}
@@ -157,16 +174,19 @@ function startSimulation() {
 	function playBreathSound() {
 		var breathAudio;
 		if (currentBPM > 200) {
-			breathAudio = new Audio('audio/200breath.mp3');	
+			breathAudio = new Audio(audioPath + '200breath.mp3');	
 		}
 		else if (currentBPM > 180) {
-			breathAudio = new Audio('audio/180breath.mp3');	
+			breathAudio = new Audio(audioPath + '180breath.mp3');	
 		}
 		else if (currentBPM > 160) {
-			breathAudio = new Audio('audio/160breath.mp3');	
+			breathAudio = new Audio(audioPath + '160breath.mp3');	
+		}
+		else if (currentBPM > 140) {
+			breathAudio = new Audio(audioPath + '140breath.mp3');	
 		}
 		else {
-			breathAudio = new Audio('audio/140breath.mp3');	
+			breathAudio = new Audio(audioPath + "120breath.mp3");	
 		}
 		breathAudio.playbackRate = Math.random() * 0.2 + 0.9; 				// random pitch between 0.9 and 1.1
 		breathAudio.preservesPitch = false;
@@ -183,17 +203,21 @@ function startSimulation() {
 		
 		// run async from simulateHeartbeat so breathing feels a bit better
         if (enableSim) {
-            setTimeout(simulateBreath, (delayMilliseconds + 10) );
+            setTimeout(simulateBreath, (delayMilliseconds + 100) );
         }
     }
 	
     function simulateHeartbeat() {
 		if (currentBPM < HR) {
-			currentBPM = HR + (currentBPM - HR) * Math.exp(-k * t * 2);
+			currentBPM = HR + (currentBPM - HR) * Math.exp(-k * t * 1.5);
 			currentBPM += Math.random() * 0.1;
 		} else {
 			currentBPM = HR + (currentBPM - HR) * Math.exp(-k * t);
 			currentBPM -= Math.random() * 0.05;
+		}
+		
+		if (currentBPM > 240) {		// max bpm
+			currentBPM -= 0.1;
 		}
         delayMilliseconds = 60000.0 / currentBPM;
 
@@ -208,13 +232,14 @@ function startSimulation() {
 		} else {
 			skipLevel -= skipThreshold;
 			var logMessage = "Skip!\n"; simulationLog.value += logMessage;
-			currentBPM += Math.random() * 10 - 5;
+			currentBPM += Math.random() * 20 - 10;
 			
 			// increase delay from 1.5 to 2.5
 			delayMilliseconds *= (Math.random() + 1.5);
 			playSkipSound();
 		}
 		
+		heartVisual();
         t = delayMilliseconds / 1000.0; // Update time
 		totalTime += t;
 		
@@ -226,6 +251,25 @@ function startSimulation() {
 	
     simulateHeartbeat();
 	simulateBreath();
+}
+
+function heartVisual() {
+	var imageElement = document.getElementById('heartImg');
+	var imageElement2 = document.getElementById('heartImg2');
+	//var imageSources = ["2heart1", "2heart2", "2heart3", "2heart4", "2heart5", "2heart6", "2heart7", "2heart8", "2heart9", "2heart10", "2heart11", "2heart12", "2heart13", "2heart14", "2heart15", "2heart16"];
+	var imageSources = ["heart1", "heart2", "heart3", "heart4", "heart5", "heart6", "heart7", "heart8"];
+	
+    var currentIndex = 0;
+	var animDelay = (60000/imageSources.length) / currentBPM;
+
+    function animate() {
+        if (currentIndex < imageSources.length) {
+            imageElement.src = "imgs/" + imageSources[currentIndex] + ".png";
+            currentIndex++;
+            setTimeout(animate, animDelay);
+        }
+    }
+    animate();
 }
 
 </script>

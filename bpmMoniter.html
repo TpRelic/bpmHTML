@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Heart Rate Monitor</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+</head>
+<body>
+<input type="file" id="audioFile" accept="audio/*">
+<button onclick="selectAudio()"		>Use Selected Audio</button>
+<input	type	="text"	id="userInput" placeholder="Enter a Number">
+<button	onclick	="setThreshold()"	>Set Threshold</button>
+<button	onclick	="setWindow()"	>Set Context Window</button>
+
+<p		id		="bpmDisplay" readonly></p>
+<p		id		="testDisplay" readonly></p>
+<canvas id="bpmChart" width="800" height="400"></canvas>
+
+<script>
+
+// global vars
+var userAudio;
+var beatsArray = [];
+var threshold = 175;
+var contextWindow = 20;
+
+function selectAudio() {
+	if (userAudio) {
+		userAudio.pause();
+    }
+	
+	const fileInput = document.getElementById('audioFile');
+	const file = fileInput.files[0];
+  
+	if (file) {
+		userAudio = new Audio(URL.createObjectURL(file));
+		toggleSim();
+	} else {
+		alert("Please select an audio file.");
+	}
+}
+function setThreshold() {
+	var input = parseInt(document.getElementById('userInput').value);
+	
+	if (!isNaN(input)) {
+		threshold = input;
+		alert("Threshold set to " + threshold + ".");
+	} else {
+		alert("Invalid Threshold.");
+	}
+}
+function setWindow() {
+	var input = parseInt(document.getElementById('userInput').value);
+	
+	if (!isNaN(input)) {
+		contextWindow = input;
+		alert("contextWindow set to " + contextWindow + ".");
+	} else {
+		alert("Invalid contextWindow.");
+	}
+}
+
+function toggleSim() {
+	userAudio.play();
+	
+	// Analyze userAudio
+	var audioContext = new AudioContext();
+	var audioSource = audioContext.createMediaElementSource(userAudio);
+	var analyser = audioContext.createAnalyser();
+	audioSource.connect(analyser);
+	analyser.connect(audioContext.destination);
+
+	// Beat detection
+	function detectBeats() {
+		var bufferLength = analyser.frequencyBinCount;
+		dataArray = new Uint8Array(bufferLength);
+
+		analyser.getByteTimeDomainData(dataArray);
+
+		var peak = false;
+		for (let i = 0; i < bufferLength; i++) {
+			if (dataArray[i] > threshold) {
+				// Adjust threshold as needed
+				var testInterval = Math.abs(beatsArray[contextWindow] - userAudio.currentTime);
+				if (testInterval < 0.2) {
+					// s2 or doubled beat, ignore
+					// nobody should have > 300 bpm anyways ignore
+					return false;
+				}
+				peak = true;
+				break;
+			}
+		}
+
+		return peak;
+	}
+
+	// Calculate BPM
+	function calculateBPM() {
+		if (beatsArray.length < contextWindow) {
+			return 0;
+		}
+
+		var sum = 0;
+		for (let i = 1; i < beatsArray.length; i++) {
+			sum += beatsArray[i] - beatsArray[i - 1];
+		}
+
+		return 60/(sum / (beatsArray.length - 1));
+	}
+
+	// Graph visualization
+	const ctx = document.getElementById('bpmChart').getContext('2d');
+	const bpmChart = new Chart(ctx, {
+		type: 'line',
+		data: {
+			labels: [],
+			datasets: [{
+				label: 'BPM',
+				data: [],
+				borderColor: 'rgb(75, 192, 192)',
+				tension: 0.1
+			}]
+		},
+		options: {
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Time'
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'BPM'
+					},
+					max: 300 // Limiting the y-axis to a maximum value of 300
+				}
+			}
+		}
+	});
+
+	function updateGraph() {
+		if (detectBeats()) {
+			var currentTime = userAudio.currentTime;
+			
+			if (beatsArray.length > contextWindow) {
+				beatsArray.shift();
+			}
+			beatsArray.push(currentTime);
+			var bpm = calculateBPM();
+			
+			document.getElementById('bpmDisplay').textContent = "BPM: " + bpm;
+
+			// Update chart data
+			bpmChart.data.labels.push(currentTime.toFixed(2));
+			bpmChart.data.datasets[0].data.push(bpm);
+			bpmChart.update();
+		}
+		requestAnimationFrame(updateGraph);
+	}
+	updateGraph();
+}
+</script>
+</body>
+</html>
